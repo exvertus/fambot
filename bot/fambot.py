@@ -1,8 +1,10 @@
 import discord
+import logging
 import os
 
-intents = discord.Intents.default()
-intents.members = True
+intents = discord.Intents.none()
+intents.messages = True
+intents.message_content = True
 
 client = discord.Client(intents=intents)
 
@@ -18,4 +20,4 @@ async def on_message(message):
     if message.content.startswith('$hello'):
         await message.channel.send('Hello!')
 
-client.run(os.environ.get("DISCORD_TOKEN"))
+client.run(os.environ.get("DISCORD_TOKEN"), log_level=logging.DEBUG)
