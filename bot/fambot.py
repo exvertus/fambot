@@ -43,7 +43,7 @@ class FamBot(discord.Client):
             responses = await asyncio.gather(*tasks)
             result = 'The current temperature and weather conditions are...\n'
             for resp in responses:
-                result += f'{resp["location"]["name"]}, {resp["location"]["region"]}: {resp["current"]["temp_f"]}F and {resp["current"]["condition"]["text"]}\n'
+                result += f'{resp["location"]["name"]}, {resp["location"]["region"]}: {resp["current"]["temp_f"]}F and {resp["current"]["condition"]["text"].lower()}\n'
             await message.channel.send(result)
 
     async def _call_api(self, url, session=None):
