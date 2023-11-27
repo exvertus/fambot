@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 import discord
 import logging
+import io
 import os
 
 class FamBot(discord.Client):
@@ -41,10 +42,16 @@ class FamBot(discord.Client):
         async with aiohttp.ClientSession() as session:
             tasks = [self._call_api(base_url + args.format(loc), session=session) for loc in os.environ.get("WEATHER_LOCATIONS").split(",")]
             responses = await asyncio.gather(*tasks)
-            result = 'The current temperature and weather conditions are...\n'
             for resp in responses:
-                result += f'{resp["location"]["name"]}, {resp["location"]["region"]}: {resp["current"]["temp_f"]}F and {resp["current"]["condition"]["text"].lower()}\n'
-            await message.channel.send(result)
+                answer = f'Weather for {resp["location"]["name"]}, {resp["location"]["region"]}: {resp["current"]["condition"]["text"]} and {resp["current"]["temp_f"]}F\n'
+                icon = f'https:{resp["current"]["condition"]["icon"]}'
+                async with session.get(icon) as i_resp:
+                    if i_resp.status != 200:
+                        file=None
+                    else:
+                        data = io.BytesIO(await i_resp.read())
+                        file = discord.File(data, filename=resp["current"]["condition"]["text"])
+                await message.channel.send(answer, file=file)
 
     async def _call_api(self, url, session=None):
         if session is None:

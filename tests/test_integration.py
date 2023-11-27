@@ -45,4 +45,4 @@ class TestIntegrationDiscord:
         def check(m):
             return m.author == connected_client.user and m.channel == bot_channel
         await connected_client.wait_for('message', timeout=60)
-        assert bot_channel.last_message.content.startswith('The current temperature and weather conditions')
+        assert bot_channel.last_message.content.startswith('Weather for ')
