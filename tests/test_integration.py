@@ -30,5 +30,19 @@ class TestIntegrationDiscord:
         bot_channel = connected_client.get_channel(int(os.environ.get("CHANNEL_ID")))
         test_message = str(uuid.uuid4())
         await bot_channel.send(f'$fambot echo {test_message}')
-        await asyncio.sleep(1)
+        def check(m):
+            return m.author == connected_client.user and m.channel == bot_channel
+        await connected_client.wait_for('message', timeout=3)
         assert bot_channel.last_message.content == test_message
+
+    @pytest.mark.asyncio
+    async def test_compare_weather(self, connected_client):
+        """
+        Test that the bot can compare the weather in multiple locations.
+        """
+        bot_channel = connected_client.get_channel(int(os.environ.get("CHANNEL_ID")))
+        await bot_channel.send(f'$fambot compare-weather')
+        def check(m):
+            return m.author == connected_client.user and m.channel == bot_channel
+        await connected_client.wait_for('message', timeout=60)
+        assert bot_channel.last_message.content.startswith('The current temperature and weather conditions')
