@@ -5,7 +5,7 @@ import pytest_asyncio
 import uuid
 import bot.fambot as fambot
 
-class TestIntegration:
+class TestIntegrationDiscord:
     @pytest_asyncio.fixture
     async def client(self):
         client = fambot.get_client()

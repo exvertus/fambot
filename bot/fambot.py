@@ -6,10 +6,6 @@ class FamBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
-        self.call_response = {
-            'help': self.help,
-            'echo': self.echo
-        }
 
     async def on_ready(self):
         self.logger.info(f'Connected to Discord as {self.user}')
@@ -29,7 +25,7 @@ class FamBot(discord.Client):
                 await self.echo(message, args)
 
     async def help(self, message, args):
-        await message.channel.send('Help menu coming soon...')
+        await message.channel.send('$fambot echo <message>: repeat back a message')
 
     async def echo(self, message, args):
         await message.channel.send(' '.join(args[1:]))
