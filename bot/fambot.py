@@ -50,7 +50,8 @@ class FamBot(discord.Client):
                         file=None
                     else:
                         data = io.BytesIO(await i_resp.read())
-                        file = discord.File(data, filename=resp["current"]["condition"]["text"])
+                        filename = f'resp["current"]["condition"]["text"].png'
+                        file = discord.File(data, filename=filename)
                 await message.channel.send(answer, file=file)
 
     async def _call_api(self, url, session=None):
