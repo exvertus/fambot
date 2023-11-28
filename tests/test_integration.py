@@ -44,5 +44,6 @@ class TestIntegrationDiscord:
         await bot_channel.send(f'$fambot compare-weather')
         def check(m):
             return m.author == connected_client.user and m.channel == bot_channel
-        await connected_client.wait_for('message', timeout=60)
+        for i in range(len(os.environ.get("WEATHER_LOCATIONS").split(","))):
+            await connected_client.wait_for('message', timeout=60, check=check)
         assert bot_channel.last_message.content.startswith('Weather for ')
