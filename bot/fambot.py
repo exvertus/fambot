@@ -40,19 +40,21 @@ class FamBot(discord.Client):
         args = "&q={}&aqi=no"
 
         async with aiohttp.ClientSession() as session:
-            tasks = [self._call_api(base_url + args.format(loc), session=session) for loc in os.environ.get("WEATHER_LOCATIONS").split(",")]
-            responses = await asyncio.gather(*tasks)
-            for resp in responses:
-                answer = f'Weather for {resp["location"]["name"]}, {resp["location"]["region"]}: {resp["current"]["condition"]["text"]} and {resp["current"]["temp_f"]}F\n'
-                icon = f'https:{resp["current"]["condition"]["icon"]}'
-                async with session.get(icon) as i_resp:
-                    if i_resp.status != 200:
-                        file=None
-                    else:
-                        data = io.BytesIO(await i_resp.read())
-                        filename = f'resp["current"]["condition"]["text"].png'
-                        file = discord.File(data, filename=filename)
-                await message.channel.send(answer, file=file)
+            tasks = [self._pull_weather_and_report(base_url + args.format(loc), session, message.channel) for loc in os.environ.get("WEATHER_LOCATIONS").split(",")]
+            await asyncio.gather(*tasks)
+
+    async def _pull_weather_and_report(self, url, session, channel):
+        response = await self._call_api(url, session=session)
+        icon = f'https:{response["current"]["condition"]["icon"]}'
+        async with session.get(icon) as icon_response:
+            if icon_response.status != 200:
+                file=None
+            else:
+                data = io.BytesIO(await icon_response.read())
+                filename = f'{response["current"]["condition"]["text"]}.png'
+                file = discord.File(data, filename=filename)
+        answer = f'Weather for {response["location"]["name"]}, {response["location"]["region"]}: {response["current"]["condition"]["text"]} and {response["current"]["temp_f"]}F'
+        await channel.send(answer, file=file)
 
     async def _call_api(self, url, session=None):
         if session is None:
