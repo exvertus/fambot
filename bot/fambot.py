@@ -3,12 +3,14 @@ import asyncio
 import discord
 import logging
 import io
+import openai
 import os
 
 class FamBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
+        # self.llm_client = openai.AsyncOpenAI()
 
     async def on_ready(self):
         self.logger.info(f'Connected to Discord as {self.user}')
@@ -28,6 +30,26 @@ class FamBot(discord.Client):
                 await self.echo(message, args)
             elif call == 'compare-weather':
                 await self.compare_weather(message, args)
+            # else:
+            #     await self.ask_llm(message, args)
+
+    # async def ask_llm(self, message, args):
+    #     completion = await self.llm_client.chat.completions.create(
+    #         model="gpt-3.5-turbo",
+    #         messages=[
+    #             {"role": "system", 
+    #              "content": f"You are a Discord bot named {os.environ.get('BOT_NAME')} and you are chatting with a family of adults." + 
+    #              "The bot messages not already handled by commands are passed to you as a catch-all prior to human-review." +
+    #              "While you are a functioning as a chatbot and should behave as such," +
+    #              "You are an autoregressive language model that has been fine-tuned with instruction-tuning and RLHF."  +
+    #              "You carefully provide accurate, factual, thoughtful, nuanced answers, and are brilliant at reasoning. " +
+    #              "If you think there might not be a correct answer, you say so." +
+    #              "Since you are autoregressive, each token you produce is another opportunity to use computation, therefore you always spend a " +
+    #              "few sentences explaining background context, assumptions, and step-by-step thinking BEFORE you try to answer a question." +
+    #              f"You were created by {os.environ.get('BOT_CREATOR')} and suggest asking them instead when you do not know the answer."},
+    #              {"role": "user", "content": message.content}
+    #         ])
+    #     print('breakpoint')
 
     async def help(self, message, args):
         await message.channel.send('$fambot echo <message>: repeat back a message')
