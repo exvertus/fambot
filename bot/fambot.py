@@ -2,6 +2,7 @@ import aiohttp
 import asyncio
 import discord
 import logging
+import io
 import os
 
 class FamBot(discord.Client):
@@ -39,12 +40,24 @@ class FamBot(discord.Client):
         args = "&q={}&aqi=no"
 
         async with aiohttp.ClientSession() as session:
-            tasks = [self._call_api(base_url + args.format(loc), session=session) for loc in os.environ.get("WEATHER_LOCATIONS").split(",")]
-            responses = await asyncio.gather(*tasks)
-            result = 'The current temperature and weather conditions are...\n'
-            for resp in responses:
-                result += f'{resp["location"]["name"]}, {resp["location"]["region"]}: {resp["current"]["temp_f"]}F and {resp["current"]["condition"]["text"].lower()}\n'
-            await message.channel.send(result)
+            tasks = [self._pull_weather_and_report(base_url + args.format(loc), session, message.channel) for loc in os.environ.get("WEATHER_LOCATIONS").split(",")]
+            await asyncio.gather(*tasks)
+
+    async def _pull_weather_and_report(self, url, session, channel):
+        response = await self._call_api(url, session=session)
+        icon_url = f'https:{response["current"]["condition"]["icon"]}'
+        name = f'{response["current"]["condition"]["text"]}.png'
+        icon = await self.weather_icon(icon_url, session, name)
+        answer = f'Weather for {response["location"]["name"]}, {response["location"]["region"]}: {response["current"]["condition"]["text"]} and {response["current"]["temp_f"]}F'
+        await channel.send(answer, file=icon)
+
+    async def weather_icon(self, icon_url, session, name):
+        async with session.get(icon_url) as icon_response:
+            if icon_response.status != 200:
+                return None
+            else:
+                data = io.BytesIO(await icon_response.read())
+                return discord.File(data, filename=name)
 
     async def _call_api(self, url, session=None):
         if session is None:
