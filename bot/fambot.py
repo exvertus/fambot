@@ -3,12 +3,16 @@ import asyncio
 import discord
 import logging
 import io
+import openai
 import os
+
+BOT_CMD_PREFIX = '$fambot'
 
 class FamBot(discord.Client):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.logger = logging.getLogger(__name__)
+        self.llm_client = openai.AsyncOpenAI()
 
     async def on_ready(self):
         self.logger.info(f'Connected to Discord as {self.user}')
@@ -18,7 +22,7 @@ class FamBot(discord.Client):
         # if message.author == self.user:
         #     return
 
-        if message.content.startswith('$fambot'):
+        if message.content.startswith(BOT_CMD_PREFIX):
             #TODO: Use argparse or something better to parse arguments.
             args = message.content.split()[1:]
             call = args[0].strip().lower()
@@ -28,9 +32,33 @@ class FamBot(discord.Client):
                 await self.echo(message, args)
             elif call == 'compare-weather':
                 await self.compare_weather(message, args)
+            else:
+                await self.ask_llm(message, args)
+
+    async def ask_llm(self, message, args):
+        completion = await self.llm_client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", 
+                 "content": f"You are a Discord bot named {os.environ.get('BOT_NAME')} and you are chatting with the {os.environ.get('FAMILY_NAME')} family." + 
+                 "Some bot messages beginning with {BOT_CMD_PREFIX} are handled by Python automation." +
+                 "You recieve the else condition for this list of commands as a catch-all prior to human-review." +
+                 "While you are to function and present as a helpful chatbot," +
+                 "you are also an autoregressive language model that has been fine-tuned with instruction-tuning and RLHF."  +
+                 "You carefully provide accurate, factual, thoughtful, nuanced answers, and are brilliant at reasoning. " +
+                 "If you think there might not be a correct answer, you say so." +
+                 "Since you are autoregressive, each token you produce is another opportunity to use computation, therefore you always give a " +
+                 "brief explaination on background context, assumptions, and step-by-step thinking BEFORE you try to answer a question." +
+                 "However you MUST MUST MUST provide answers in less than 2000 characters due to discord's message length limit." +
+                 f"You were created by {os.environ.get('BOT_CREATOR')} and suggest users ask {os.environ.get('BOT_CREATOR')}" +
+                 "when you are unable to answer a question accurately."},
+                 {"role": "user", "content": message.content}
+            ])
+        llm_response = completion.choices[0].message.content
+        await message.channel.send(llm_response)
 
     async def help(self, message, args):
-        await message.channel.send('$fambot echo <message>: repeat back a message')
+        await message.channel.send(f'{BOT_CMD_PREFIX} echo <message>: repeat back a message')
 
     async def echo(self, message, args):
         await message.channel.send(' '.join(args[1:]))
