@@ -45,16 +45,19 @@ class FamBot(discord.Client):
 
     async def _pull_weather_and_report(self, url, session, channel):
         response = await self._call_api(url, session=session)
-        icon = f'https:{response["current"]["condition"]["icon"]}'
-        async with session.get(icon) as icon_response:
+        icon_url = f'https:{response["current"]["condition"]["icon"]}'
+        name = f'{response["current"]["condition"]["text"]}.png'
+        icon = await self.weather_icon(icon_url, session, name)
+        answer = f'Weather for {response["location"]["name"]}, {response["location"]["region"]}: {response["current"]["condition"]["text"]} and {response["current"]["temp_f"]}F'
+        await channel.send(answer, file=icon)
+
+    async def weather_icon(self, icon_url, session, name):
+        async with session.get(icon_url) as icon_response:
             if icon_response.status != 200:
-                file=None
+                return None
             else:
                 data = io.BytesIO(await icon_response.read())
-                filename = f'{response["current"]["condition"]["text"]}.png'
-                file = discord.File(data, filename=filename)
-        answer = f'Weather for {response["location"]["name"]}, {response["location"]["region"]}: {response["current"]["condition"]["text"]} and {response["current"]["temp_f"]}F'
-        await channel.send(answer, file=file)
+                return discord.File(data, filename=name)
 
     async def _call_api(self, url, session=None):
         if session is None:
